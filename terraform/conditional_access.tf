@@ -4,7 +4,7 @@
 
 locals {
   # Built-in "Phishing-resistant MFA" authentication strength.
-  phishing_resistant_strength = "/policies/authenticationStrengthPolicies/00000000-0000-0000-0000-000000000004"
+  phishing_resistant_strength = "00000000-0000-0000-0000-000000000004"
 
   # Entra directory role template IDs treated as privileged.
   privileged_role_template_ids = [

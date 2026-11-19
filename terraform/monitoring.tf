@@ -33,6 +33,10 @@ resource "azurerm_monitor_aad_diagnostic_setting" "entra_to_sentinel" {
     ]
     content {
       category = enabled_log.value
+
+      retention_policy {
+        enabled = false
+      }
     }
   }
 }
