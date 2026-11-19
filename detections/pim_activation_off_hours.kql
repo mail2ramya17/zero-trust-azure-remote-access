@@ -1,0 +1,17 @@
+// PIM role activation outside business hours
+// Business hours: Monday-Friday 07:00-19:00 in the operations time zone.
+let OpsTimeZone = "America/Chicago";
+let StartHour = 7;
+let EndHour = 19;
+AuditLogs
+| where TimeGenerated > ago(1h)
+| where LoggedByService == "PIM"
+| where OperationName has "PIM activation" or OperationName has "Add member to role completed"
+| where Result == "success"
+| extend LocalTime = datetime_utc_to_local(TimeGenerated, OpsTimeZone)
+| extend LocalHour = hourofday(LocalTime), LocalDay = dayofweek(LocalTime)
+| where LocalHour < StartHour or LocalHour >= EndHour
+        or LocalDay == 0d or LocalDay == 6d
+| extend Activator = tostring(InitiatedBy.user.userPrincipalName)
+| extend Role = tostring(TargetResources[0].displayName)
+| project TimeGenerated, LocalTime, Activator, Role, OperationName, ResultReason, CorrelationId

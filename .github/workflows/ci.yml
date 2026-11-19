@@ -1,0 +1,44 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: terraform
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.9.8"
+      - name: Format
+        run: terraform fmt -check -recursive
+      - name: Init (no backend)
+        run: terraform init -backend=false -input=false
+      - name: Validate
+        run: terraform validate
+
+  policy-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install test dependencies
+        run: pip install pytest
+      - name: Unit tests
+        run: pytest -q
+      - name: Audit sample export
+        run: |
+          python scripts/ca_policy_audit.py tests/fixtures/baseline_compliant.json \
+            --break-glass 11111111-1111-1111-1111-111111111111 \
+            --break-glass 22222222-2222-2222-2222-222222222222

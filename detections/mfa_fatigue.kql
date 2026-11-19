@@ -1,0 +1,17 @@
+// Possible MFA fatigue / push bombing
+// Three or more MFA denials for one user within the hour.
+let Threshold = 3;
+SigninLogs
+| where TimeGenerated > ago(1h)
+| where ResultType == "500121"
+| mv-expand AuthStep = todynamic(AuthenticationDetails)
+| where tostring(AuthStep.authenticationStepResultDetail) has_any ("MFA denied", "declined")
+| summarize Denials = count(),
+            SourceIps = make_set(IPAddress, 10),
+            Countries = make_set(tostring(LocationDetails.countryOrRegion), 10),
+            Apps = make_set(AppDisplayName, 10),
+            FirstSeen = min(TimeGenerated),
+            LastSeen = max(TimeGenerated)
+          by UserPrincipalName, UserId
+| where Denials >= Threshold
+| order by Denials desc

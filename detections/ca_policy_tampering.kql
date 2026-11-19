@@ -1,0 +1,18 @@
+// Conditional Access policy added, changed, disabled or deleted
+// Changes to CA are changes to the Zero Trust perimeter and should map to a change ticket.
+AuditLogs
+| where TimeGenerated > ago(1h)
+| where OperationName in ("Add conditional access policy",
+                          "Update conditional access policy",
+                          "Delete conditional access policy")
+| extend Actor = coalesce(tostring(InitiatedBy.user.userPrincipalName),
+                          tostring(InitiatedBy.app.displayName))
+| extend ActorIp = tostring(InitiatedBy.user.ipAddress)
+| extend PolicyName = tostring(TargetResources[0].displayName)
+| extend NewValue = tostring(TargetResources[0].modifiedProperties[0].newValue)
+| extend NewState = extract(@'\\?"state\\?"\s*:\s*\\?"([A-Za-z]+)', 1, NewValue)
+| extend Disabled = NewState in ("disabled", "enabledForReportingButNotEnforced")
+                    or OperationName == "Delete conditional access policy"
+| project TimeGenerated, OperationName, PolicyName, NewState, Disabled,
+          Actor, ActorIp, Result, CorrelationId
+| order by Disabled desc, TimeGenerated desc

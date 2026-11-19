@@ -1,0 +1,10 @@
+// Emergency access (break-glass) account sign-in
+// Any sign-in attempt by these accounts should be rare and pre-announced.
+// __BREAK_GLASS_IDS__ is replaced by Terraform with the account object IDs.
+let BreakGlassIds = dynamic([__BREAK_GLASS_IDS__]);
+union isfuzzy=true SigninLogs, AADNonInteractiveUserSignInLogs
+| where TimeGenerated > ago(1h)
+| where UserId in (BreakGlassIds)
+| extend Country = tostring(LocationDetails.countryOrRegion)
+| project TimeGenerated, UserPrincipalName, UserId, ResultType, ResultDescription,
+          IPAddress, Country, AppDisplayName, ClientAppUsed, CorrelationId

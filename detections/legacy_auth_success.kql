@@ -1,0 +1,18 @@
+// Successful sign-in over a legacy authentication protocol
+// CA002 blocks these. A success means a gap: an excluded user, a policy left
+// in report-only, or a protocol the policy does not cover.
+let LegacyClients = dynamic([
+    "Exchange ActiveSync", "IMAP4", "POP3", "Authenticated SMTP",
+    "MAPI Over HTTP", "Exchange Web Services", "Offline Address Book",
+    "Outlook Anywhere (RPC over HTTP)", "AutoDiscover",
+    "Exchange Online PowerShell", "Other clients"]);
+SigninLogs
+| where TimeGenerated > ago(1h)
+| where ResultType == "0"
+| where ClientAppUsed in (LegacyClients)
+| summarize SignIns = count(),
+            SourceIps = make_set(IPAddress, 10),
+            FirstSeen = min(TimeGenerated),
+            LastSeen = max(TimeGenerated)
+          by UserPrincipalName, ClientAppUsed, AppDisplayName, ConditionalAccessStatus
+| order by SignIns desc
